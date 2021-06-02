@@ -22,7 +22,16 @@ A Chrome extension to control Deezer with a MIDI device.
 
 ### Installation ###
 
-TODO.
+* Open chrome://extensions
+* Enable _developer mode_ by clicking on the toggle switch.
+* Click _load unpacked_ button and select the directory that contains
+  the manifest.
+
+The extension should show up in Chrome.
+
+### Reading Point ###
+
+https://developer.chrome.com/docs/extensions/mv3/overview/
 
 ### License ###
 
