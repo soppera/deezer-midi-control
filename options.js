@@ -19,6 +19,7 @@
 let midi_in_combo = document.getElementById('midi_in');
 let midi_in_placeholder = document.getElementById('midi_in_placeholder');
 let midi_event_row_template = document.getElementById('row_template');
+let omni_checkbox = document.getElementById('omni');
 const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 async function setup() {
@@ -50,6 +51,10 @@ async function setup() {
     setup_midi_event('Pause', 'pause', options, capture_manager);
     setup_midi_event('Previous', 'previous', options, capture_manager);
     setup_midi_event('Next', 'next', options, capture_manager);
+
+    // Setup the omni combo.
+    omni_checkbox.checked = options.omni;
+    omni_checkbox.addEventListener('change', on_omni_checkbox_change);
 }
 
 function note_name(key) {
@@ -98,6 +103,11 @@ function set_midi_event_data(row, option) {
 function on_midi_in_combo_change() {
     console.log(`midi_input ← ${midi_in_combo.value}`);
     set_local_storage({midi_input: midi_in_combo.value});
+}
+
+function on_omni_checkbox_change() {
+    console.log(`omni ← ${omni_checkbox.checked}`);
+    set_local_storage({omni: omni_checkbox.checked});
 }
 
 class CaptureManager {
