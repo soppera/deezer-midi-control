@@ -21,7 +21,7 @@ body.popup {
 }
 
 select#midi_in {
-    width: 230px;
+    width: 294px;
 }
 
 label {
@@ -47,11 +47,13 @@ button.capture.capturing:after {
 
 .midi_binding,
 .midi_binding .event,
+.midi_binding .number,
 .midi_binding .channel {
     display: inline-block;
 }
 
 .midi_binding .event,
+.midi_binding .number,
 .midi_binding .channel {
     padding: 0 20px;
     text-align: center;
@@ -61,7 +63,8 @@ button.capture.capturing:after {
     width: 50px;
 }
 
-.midi_binding .channel {
+.midi_binding .channel,
+.midi_binding .number {
     width: 25px;
 }
 
