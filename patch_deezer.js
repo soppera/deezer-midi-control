@@ -77,15 +77,10 @@ function find_input(midi_access, input_name) {
 
 let limit = 0;
 
-class Connection {
+class Session {
+    // Don't call this directly. Use the new_session() function.
     constructor(midi_access) {
         this.midi_access = midi_access;
-
-        midi_access.onstatechange = event => {
-            this.on_port_changed(event.port)
-                .catch(err => { console.error(err); });
-        }
-
         // Serialize accesses to connected_port.
         this.mutex = new Mutex();
         this.connected_port = null;
@@ -104,19 +99,6 @@ class Connection {
                 port.state === 'disconnected') {
                 await this.locked_disconnect();
             } else if (!this.connected_port) {
-                await this.locked_connect();
-            }
-        } finally {
-            unlock();
-        }
-    }
-
-    // Connects if not already connected (or being connected if
-    // another connection is on-going).
-    async connect() {
-        let unlock = await this.mutex.lock();
-        try {
-            if (this.connected_port == null) {
                 await this.locked_connect();
             }
         } finally {
@@ -193,12 +175,30 @@ class Connection {
     }
 }
 
-let connection = null;
+// Instantiates a new session and connects to MIDI.
+async function new_session(midi_access) {
+    let session = new Session(midi_access);
+    let unlock = await session.mutex.lock();
+    try {
+        midi_access.onstatechange = event => {
+            session.on_port_changed(event.port)
+                .catch(err => { console.error(err); });
+        }
+
+        await session.locked_connect();
+
+        return session;
+    } finally {
+        unlock();
+    }
+}
+
+
+let session = null;
 
 navigator.requestMIDIAccess().then(async midi_access => {
     console.log(`got midi: ${midi_access}`);
     log_all_midi_inputs(midi_access);
 
-    connection = new Connection(midi_access);
-    await connection.connect();
+    session = await new_session(midi_access);
 }).catch(err => { console.error(err); })
