@@ -66,15 +66,6 @@ function deezer_previous() {
     }
 }
 
-function find_input(midi_access, input_name) {
-    for (let input of midi_access.inputs.values()) {
-        if (input.name === input_name) {
-            return input;
-        }
-    }
-    return null;
-}
-
 let limit = 0;
 
 class Session {

@@ -22,3 +22,14 @@ function log_all_midi_inputs(midi_access) {
         console.log(`  ${k}: ${midi_access.inputs.get(k).name}`);
     }    
 }
+
+function find_input(midi_access, input_name) {
+    for (let input of midi_access.inputs.values()) {
+        if (input.name === input_name) {
+            return input;
+        }
+    }
+    return null;
+}
+
+
