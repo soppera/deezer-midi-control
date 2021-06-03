@@ -53,7 +53,7 @@ async function get_local_storage(keys) {
             'midi_input',
             (values) => {
                 if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
+                    reject(chrome.runtime.lastError.message);
                 } else {
                     resolve(values);
                 }
@@ -67,7 +67,7 @@ async function set_local_storage(values) {
             values,
             () => {
                 if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
+                    reject(chrome.runtime.lastError.message);
                 } else {
                     resolve();
                 }
