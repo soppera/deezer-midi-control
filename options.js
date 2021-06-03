@@ -16,51 +16,51 @@
 // <https://www.gnu.org/licenses/>.
 'use strict';
 
-let page = document.getElementById('button_div');
-let selected_class_name = 'current';
-const preset_button_colors = ["#3aa757", "#e8453c", "#f9bb2d", "#4688f1"];
+let midi_in_combo = document.getElementById('midi_in');
+let midi_in_placeholder = document.getElementById('midi_in_placeholder');
 
-function on_button_click(event) {
-    let current =
-        event.target.parentElement.querySelector(`.${selected_class_name}`);
-    if (current && current !== event.target) {
-        current.classList.remove(selected_class_name);
-    }
-    let color = event.target.dataset.color;
-    event.target.classList.add(selected_class_name);
-    chrome.storage.sync.set({color});
-}
+async function setup() {
+    let midi_access_promise = navigator.requestMIDIAccess();
+    let options_promise = get_local_storage(null);
+    
+    let midi_access = await midi_access_promise;
+    let options = await options_promise;
 
-function add_options(button_colors) {
-    chrome.storage.sync.get('color', (data) => {
-        let current_color = data.color;
-        for (let button_color of button_colors) {
-            let button = document.createElement('button');
-            button.dataset.color = button_color;
-            button.style.backgroundColor = button_color;
+    for (let input of midi_access.inputs.values()) {
+        let option = document.createElement('option');
+        option.value = input.name;
+        option.textContent = input.name;
 
-            if (button_color === current_color) {
-                button.classList.add(selected_class_name);
-            }
-
-            button.addEventListener('click', on_button_click);
-            page.appendChild(button);
+        if (input.name === options.midi_input) {
+            option.selected = true;
+            midi_in_placeholder.selected = false;
         }
-    });
+        
+        midi_in_combo.appendChild(option);
+    }
+
+    midi_in_combo.addEventListener('change', on_midi_in_combo_change);
 }
 
-add_options(preset_button_colors);
-get_local_storage(null)
-    .then((values) => {
-        let midi_in = document.getElementById('midi_in');
-        midi_in.value = values.midi_input;
-        midi_in.addEventListener('input', () => {
-            set_local_storage({midi_input: midi_in.value})
-                .catch(err => { console.error(err); });
-        });
-    }) .catch(err => { console.error(err); });
+function on_midi_in_combo_change() {
+    console.log(`midi_input ← ${midi_in_combo.value}`);
+    set_local_storage({midi_input: midi_in_combo.value});
+}
 
-navigator.requestMIDIAccess().then((midi_access) => {
-    console.log(`got midi: ${midi_access}`);
-    log_all_midi_inputs(midi_access);
-});
+setup().catch(console.error);
+
+
+// get_local_storage(null)
+//     .then((values) => {
+//         let midi_in = document.getElementById('midi_in');
+//         midi_in.value = values.midi_input;
+//         midi_in.addEventListener('input', () => {
+//             set_local_storage({midi_input: midi_in.value})
+//                 .catch(err => { console.error(err); });
+//         });
+//     }) .catch(err => { console.error(err); });
+
+// navigator.requestMIDIAccess().then((midi_access) => {
+//     console.log(`got midi: ${midi_access}`);
+//     log_all_midi_inputs(midi_access);
+// });

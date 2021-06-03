@@ -16,16 +16,55 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-button {
-    height: 30px;
-    width: 30px;
-    outline: none;
-    maring: 10px;
-    border: none;
-    border-radius: 2px;
+select#midi_in {
+    width: 230px;
 }
 
-button.current {
-    box-shadow: 0 0 0 2px white,
-                0 0 0 4px black;
+label {
+    display: inline-block;
+    width: 120px;
+}
+
+button.capture {
+    width: 70px;
+}
+
+button.capture:after {
+    content: 'capture'
+}
+
+button.capture.capturing {
+    background-color: #ff9f9f;
+}
+
+button.capture.capturing:after {
+    content: 'cancel'
+}
+
+.midi_binding,
+.midi_binding .event,
+.midi_binding .channel {
+    display: inline-block;
+}
+
+.midi_binding .event,
+.midi_binding .channel {
+    padding: 0 20px;
+    text-align: center;
+}
+
+.midi_binding .event {
+    width: 50px;
+}
+
+.midi_binding .channel {
+    width: 25px;
+}
+
+.midi_binding {
+    background-color: #f3f3f3;
+}
+
+.options .row {
+    margin: 4px 0;
 }
