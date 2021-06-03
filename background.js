@@ -18,12 +18,7 @@
 let color = '#3aa757';
 
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.sync.set({ color });
-    console.log('Default background color set to %cgreen',
-                `color: ${color}`);
+    chrome.storage.local.set({midi_input: ''});
+    console.log('Default midi_input reset to the empty string');
 });
 
-chrome.runtime.onMessage.addListener((request, sender, send_response) => {
-    console.log(`message from ${sender.tab} → ${request}`);
-    send_response('OK');
-});

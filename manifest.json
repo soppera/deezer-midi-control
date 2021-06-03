@@ -30,7 +30,8 @@
     "content_scripts": [
         {
             "matches": ["*://*.midi.org/*"],
-            "js": ["midi_tools.js",
+            "js": ["async_apis.js",
+                   "midi_tools.js",
                    "patch_deezer.js"]
         }
     ]

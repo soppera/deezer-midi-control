@@ -14,14 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see
 // <https://www.gnu.org/licenses/>.
-console.log(`patching ${window.location} to add Deezer MIDI control`);
 
-navigator.requestMIDIAccess().then(async midi_access => {
-    console.log(`got midi: ${midi_access}`);
-    log_all_midi_inputs(midi_access);
+async function get_local_storage(keys) {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get(
+            'midi_input',
+            (values) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(values);
+                }
+            });
+    });
+}
 
-    let values = await get_local_storage('midi_input');
-    console.log(`midi_input: ${values.midi_input}`);
+async function set_local_storage(values) {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.set(
+            values,
+            () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve();
+                }
+            });
+    });
+}
 
-    await set_local_storage({'midi_input': 4});
-}).catch(err => { console.error(err); })
