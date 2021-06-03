@@ -19,7 +19,20 @@
 let color = '#3aa757';
 
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.set({midi_input: ''});
-    console.log('Default midi_input reset to the empty string');
+    chrome.storage.local.set({
+        midi_input: '',
+        play_event: null,
+        pause_event: null,
+        next_event: null,
+        previous_event: null,
+        omni: true,
+        capturing: false,
+    }, () => {
+        if (chrome.runtime.lastError) {
+            console.error(chrome.runtime.lastError.message);
+        } else {
+            console.log('Default settings installed');
+        }
+    });
 });
 

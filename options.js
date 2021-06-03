@@ -46,6 +46,7 @@ async function setup() {
     midi_in_combo.addEventListener('change', on_midi_in_combo_change);
 
     // Setup the MIDI events.
+    await set_local_storage({capturing: false});
     let capture_manager = new CaptureManager(midi_access);
     setup_midi_event('Play', 'play', options, capture_manager);
     setup_midi_event('Pause', 'pause', options, capture_manager);
@@ -114,13 +115,15 @@ class CaptureManager {
     constructor(midi_access) {
         this.midi_access = midi_access;
         this.capturing = null;
+        // Serialize writes to options for capturing.
+        this.options_mutex = new Mutex();
     }
 
     reset() {
         if (!this.capturing) {
             return;
         }
-        
+
         this.capturing.button.classList.remove('capturing');
         this.capturing.row.querySelector('.event').textContent = this.capturing.last_event;
         this.capturing.row.querySelector('.number').textContent = this.capturing.last_number;
@@ -132,13 +135,25 @@ class CaptureManager {
         this.capturing = null;
     }
 
+    async set_options(options) {
+        let unlock = await this.options_mutex.lock();
+        try {
+            await set_local_storage(options);
+        } finally {
+            unlock();
+        }
+    }
+
     on_capture_clicked(name, button, row) {
         if (this.capturing) {
             let cancel = this.capturing.name === name;
             this.reset();
             if (cancel) {
+                this.set_options({capturing: false}).catch(console.error); 
                 return;
             }
+        } else {
+            this.set_options({capturing: true}).catch(console.error); 
         }
 
         let input_port = find_input(this.midi_access, midi_in_combo.value);
@@ -186,7 +201,9 @@ class CaptureManager {
             return;
         }
 
-        let options = {}
+        let options = {
+            capturing: false,
+        }
         options[`${this.capturing.name}_event`] = option;
 
         let row = this.capturing.row;
@@ -194,7 +211,8 @@ class CaptureManager {
         this.reset();
 
         set_midi_event_data(row, option);
-        set_local_storage(options).catch(console.error);
+
+        this.set_options(options).catch(console.error);
     }
 }
 

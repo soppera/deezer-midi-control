@@ -50,7 +50,7 @@ async function wait(ms) {
 async function get_local_storage(keys) {
     return new Promise((resolve, reject) => {
         chrome.storage.local.get(
-            'midi_input',
+            keys,
             (values) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError.message);

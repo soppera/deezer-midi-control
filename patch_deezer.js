@@ -68,6 +68,21 @@ function deezer_previous() {
 
 let limit = 0;
 
+function is_event_matching(event, matcher, omni) {
+    if (!event) {
+        return false;
+    }
+    for (let k of Object.keys(matcher)) {
+        if (k === 'channel' && omni) {
+            continue;
+        }
+        if (event[k] !== matcher[k]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 class Session {
     // Don't call this directly. Use the new_session() function.
     constructor(midi_access) {
@@ -76,6 +91,12 @@ class Session {
         this.options = {
             // Name of the MIDI input to listen to.
             midi_input: '',
+            play_event: null,
+            pause_event: null,
+            next_event: null,
+            previous_event: null,
+            omni: false,
+            capturing: false
         }
         this.midi_access = midi_access;
         this.connected_port = null;
@@ -117,40 +138,51 @@ class Session {
 
         await input.open();
 
-        input.onmidimessage = this.on_midi_message;
+        input.onmidimessage = event => { this.on_midi_message(event) };
         this.connected_port = input;
     }
 
     on_midi_message(event) {
+        if (this.options.capturing) {
+            return;
+        }
+        
         if (event.data.length !== 3) {
             return;
         }
 
         let type = event.data[0] & 0xf0;
-        if (type !== 0x90 || event.data[2] === 0) {
-            // Not note-on or zero volocity.
+        let matcher = null;
+        let channel = event.data[0] & 0xf;
+        if (type === 0x90 && event.data[2] > 0) {
+            matcher = {
+                type: 'note',
+                key: event.data[1],
+                channel
+            }
+        } else if (type === 0xb0 && event.data[2] >= 0x40) {
+            matcher = {
+                type: 'cc',
+                cc: event.data[1],
+                channel
+            }
+        } else {
             return;
         }
 
-        let key = event.data[1];
-        switch (key) {
-        case 36:
+        if (is_event_matching(this.options.play_event, matcher, this.options.omni)) {
             console.log("MIDI Controller: Deezer ▶");
             deezer_play();
-            break;
-        case 38:
+            return;
+        } else if (is_event_matching(this.options.pause_event, matcher, this.options.omni)) {
             console.log("MIDI Controller: Deezer ⏸");
             deezer_pause();
-            break;
-        case 43:
+        } else if (is_event_matching(this.options.previous_event, matcher, this.options.omni)) {
             console.log("MIDI Controller: Deezer ⏮");
             deezer_previous();
-            break;
-        case 45:
+        } else if (is_event_matching(this.options.next_event, matcher, this.options.omni)) {
             console.log("MIDI Controller: Deezer ⏭");
             deezer_next();
-            break;
-            
         }
     }
 
@@ -184,7 +216,7 @@ async function new_session(midi_access) {
         // Read the current value of options.
         let values = await get_local_storage(null);
         for (const key of Object.keys(session.options)) {
-            console.log(`session.options[${key}] ← ${values[key]}`);
+            console.log(`session.options[${key}] ← ${JSON.stringify(values[key])}`);
             session.options[key] = values[key];
         }
 
@@ -195,7 +227,7 @@ async function new_session(midi_access) {
                 let unlock = await session.mutex.lock();
                 try {
                     for (let [key, {oldValue, newValue}] of Object.entries(changes)) {
-                        console.log(`session.options[${key}] ← ${newValue}`);
+                        console.log(`session.options[${key}] ← ${JSON.stringify(newValue)}`);
                         session.options[key] = newValue;
                     }
                     if (changes.midi_input) {
@@ -233,7 +265,7 @@ navigator.requestMIDIAccess()
         chrome.runtime.onMessage.addListener((request, sender, send_response) => {
             if (request.method === 'session_status') {
                 // We don't lock here since; the operations are atomic.
-                if (session && session.connected_port) {
+                if (session.connected_port) {
                     send_response({
                         connected: true,
                         midi_input: session.connected_port.name
