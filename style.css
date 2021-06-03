@@ -16,6 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+body.popup {
+    width: 250px;
+}
+
 select#midi_in {
     width: 230px;
 }
