@@ -229,12 +229,23 @@ async function new_session(midi_access) {
     }
 }
 
-
 let session = null;
 
-navigator.requestMIDIAccess().then(async midi_access => {
-    console.log(`got midi: ${midi_access}`);
-    log_all_midi_inputs(midi_access);
+navigator.requestMIDIAccess()
+    .then(async midi_access => {
+        console.log(`got midi: ${midi_access}`);
+        log_all_midi_inputs(midi_access);
 
-    session = await new_session(midi_access);
-}).catch(err => { console.error(err); })
+        session = await new_session(midi_access);
+    })
+    .then(() => {
+        chrome.runtime.onMessage.addListener((request, sender, send_response) => {
+            if (request.method === 'session_status') {
+                send_response({
+                    // We don't lock here since this operation is atomic.
+                    connected: session && session.connected_port
+                });
+            }
+        });
+    })
+    .catch(err => { console.error(err); })

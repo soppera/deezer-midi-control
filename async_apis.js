@@ -75,3 +75,16 @@ async function set_local_storage(values) {
     });
 }
 
+async function tab_send_message(tab_id, msg) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(
+            tab_id, msg,
+            (val) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError.message);
+                } else {
+                    resolve(val);
+                }
+            });
+    });
+}

@@ -39,3 +39,22 @@ function set_page_background_color() {
         document.body.style.backgroundColor = color;
     });
 }
+
+chrome.tabs.query({
+    active: true,
+    currentWindow: true
+})
+    .then(async ([tab]) => {
+        console.log('here');
+        let status = await tab_send_message(tab.id, {method: 'session_status'});
+        console.log('there');
+        if (status.connected) {
+            document.body.appendChild(document.createTextNode('connected'));
+        } else {
+            document.body.appendChild(document.createTextNode('not connected'));
+        }
+    })
+    .catch((err) => {
+        console.warn(`can't connect to the script: ${err}`);
+        document.body.appendChild(document.createTextNode('not the Deezer tab'));
+    });
