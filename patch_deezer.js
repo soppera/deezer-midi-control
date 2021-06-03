@@ -241,10 +241,15 @@ navigator.requestMIDIAccess()
     .then(() => {
         chrome.runtime.onMessage.addListener((request, sender, send_response) => {
             if (request.method === 'session_status') {
-                send_response({
-                    // We don't lock here since this operation is atomic.
-                    connected: session && session.connected_port
-                });
+                // We don't lock here since; the operations are atomic.
+                if (session && session.connected_port) {
+                    send_response({
+                        connected: true,
+                        midi_input: session.connected_port.name
+                    });
+                } else {
+                    send_response({connected: false});
+                }
             }
         });
     })

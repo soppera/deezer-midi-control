@@ -16,45 +16,28 @@
 // <https://www.gnu.org/licenses/>.
 'use strict';
 
-let change_color = document.getElementById('change_color');
-
-chrome.storage.sync.get('color', ({color}) => {
-    change_color.style.backgroundColor = color;
-});
-
-change_color.addEventListener('click', async () => {
+async function setup() {
     let [tab] = await chrome.tabs.query({
         active: true,
         currentWindow: true
     });
 
-    chrome.scripting.executeScript({
-        target: {tabId: tab.id},
-        function: set_page_background_color
-    });
-});
-
-function set_page_background_color() {
-    chrome.storage.sync.get('color', ({color}) => {
-        document.body.style.backgroundColor = color;
-    });
-}
-
-chrome.tabs.query({
-    active: true,
-    currentWindow: true
-})
-    .then(async ([tab]) => {
-        console.log('here');
-        let status = await tab_send_message(tab.id, {method: 'session_status'});
-        console.log('there');
-        if (status.connected) {
-            document.body.appendChild(document.createTextNode('connected'));
-        } else {
-            document.body.appendChild(document.createTextNode('not connected'));
-        }
-    })
-    .catch((err) => {
+    let status;
+    try {
+        status = await tab_send_message(tab.id, {method: 'session_status'});
+    } catch (err) {
         console.warn(`can't connect to the script: ${err}`);
         document.body.appendChild(document.createTextNode('not the Deezer tab'));
-    });
+    }
+    if (status) {
+        if (status.connected) {
+            document.body.appendChild(document.createTextNode(
+                `connected to MIDI: ${status.midi_input}`));
+        } else {
+            document.body.appendChild(document.createTextNode('not connected MIDI'));
+        }
+    }
+}
+
+setup().catch(console.error);
+
