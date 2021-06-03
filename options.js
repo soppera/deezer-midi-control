@@ -50,6 +50,15 @@ function add_options(button_colors) {
 }
 
 add_options(preset_button_colors);
+get_local_storage(null)
+    .then((values) => {
+        let midi_in = document.getElementById('midi_in');
+        midi_in.value = values.midi_input;
+        midi_in.addEventListener('input', () => {
+            set_local_storage({midi_input: midi_in.value})
+                .catch(err => { console.error(err); });
+        });
+    }) .catch(err => { console.error(err); });
 
 navigator.requestMIDIAccess().then((midi_access) => {
     console.log(`got midi: ${midi_access}`);

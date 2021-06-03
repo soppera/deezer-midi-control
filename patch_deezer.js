@@ -80,9 +80,13 @@ let limit = 0;
 class Session {
     // Don't call this directly. Use the new_session() function.
     constructor(midi_access) {
-        this.midi_access = midi_access;
-        // Serialize accesses to connected_port.
+        // Serialize accesses to connected_port and options.
         this.mutex = new Mutex();
+        this.options = {
+            // Name of the MIDI input to listen to.
+            midi_input: '',
+        }
+        this.midi_access = midi_access;
         this.connected_port = null;
     }
 
@@ -112,15 +116,16 @@ class Session {
     async locked_connect() {
         console.assert(!this.connected_port);
         
-        let values = await get_local_storage('midi_input');
-        let input = find_input(this.midi_access, values.midi_input);
+        let input = find_input(this.midi_access, this.options.midi_input);
         if (!input) {
-            console.warn(`Can't find the MIDI input named ${JSON.stringify(values.midi_input)}.`);
+            console.warn(`Can't find the MIDI input named ${JSON.stringify(this.options.midi_input)}.`);
             return;
         }
 
         console.log(`Connecting to ${JSON.stringify(input.name)}.`);
+
         await input.open();
+
         input.onmidimessage = this.on_midi_message;
         this.connected_port = input;
     }
@@ -185,6 +190,37 @@ async function new_session(midi_access) {
                 .catch(err => { console.error(err); });
         }
 
+        // Read the current value of options.
+        let values = await get_local_storage(null);
+        for (const key of Object.keys(session.options)) {
+            console.log(`session.options[${key}] ← ${values[key]}`);
+            session.options[key] = values[key];
+        }
+
+        // Setup a listener to refresh the options and connection when
+        // values changes.
+        chrome.storage.local.onChanged.addListener((changes) => {
+            (async () => {
+                let unlock = await session.mutex.lock();
+                try {
+                    for (let [key, {oldValue, newValue}] of Object.entries(changes)) {
+                        console.log(`session.options[${key}] ← ${newValue}`);
+                        session.options[key] = newValue;
+                    }
+                    if (changes.midi_input) {
+                        console.log(`session.options.midi_input changed!`);
+                        if (session.connected_port) {
+                            await session.locked_disconnect();
+                        }
+                        await session.locked_connect();
+                    }
+                } finally {
+                    unlock();
+                }
+            })().catch(console.error);
+        });
+
+        // Try to connect with current options.
         await session.locked_connect();
 
         return session;
