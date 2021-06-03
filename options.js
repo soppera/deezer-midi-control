@@ -48,3 +48,8 @@ function add_options(button_colors) {
 }
 
 add_options(preset_button_colors);
+
+navigator.requestMIDIAccess().then((midi_access) => {
+    console.log(`got midi: ${midi_access}`);
+    log_all_midi_inputs(midi_access);
+});

@@ -15,15 +15,9 @@
 // along with this program.  If not, see
 // <https://www.gnu.org/licenses/>.
 
-let color = '#3aa757';
-
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.sync.set({ color });
-    console.log('Default background color set to %cgreen',
-                `color: ${color}`);
-});
-
-chrome.runtime.onMessage.addListener((request, sender, send_response) => {
-    console.log(`message from ${sender.tab} → ${request}`);
-    send_response('OK');
-});
+function log_all_midi_inputs(midi_access) {
+    console.log('inputs:');
+    for (let k of midi_access.inputs.keys()) {
+        console.log(`  ${k}: ${midi_access.inputs.get(k).name}`);
+    }    
+}

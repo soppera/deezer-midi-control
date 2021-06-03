@@ -14,16 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see
 // <https://www.gnu.org/licenses/>.
-
-let color = '#3aa757';
-
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.sync.set({ color });
-    console.log('Default background color set to %cgreen',
-                `color: ${color}`);
+console.log(`patching for ${window.location}`);
+document.body.style.backgroundColor = 'red';
+chrome.runtime.sendMessage('test', function (response) {
+    console.log(`response: ${response}`);
 });
 
-chrome.runtime.onMessage.addListener((request, sender, send_response) => {
-    console.log(`message from ${sender.tab} → ${request}`);
-    send_response('OK');
+navigator.requestMIDIAccess().then((midi_access) => {
+    console.log(`got midi: ${midi_access}`);
+    log_all_midi_inputs(midi_access);
 });
