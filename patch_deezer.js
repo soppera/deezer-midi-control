@@ -18,6 +18,54 @@
 
 console.log(`patching ${window.location} to add Deezer MIDI control`);
 
+// Returns an object with the play/pause <button> as `btn` and a
+// boolean `playing`.
+function deezer_play_pause_button() {
+    const svg = document.querySelector(
+        '.player-controls button > svg.svg-icon-pause , ' +
+            '.player-controls button > svg.svg-icon-play');
+    return {
+        btn: svg.parentElement,
+        playing: svg.classList.contains('svg-icon-pause')
+    }
+}
+
+// Starts playing if it was not already playing.
+function deezer_play() {
+    const {playing, btn} = deezer_play_pause_button();
+    if (!btn.disabled && !playing) {
+        btn.click();
+    }
+}
+
+// Pauses playing if it was playing.
+function deezer_pause() {
+    const {playing, btn} = deezer_play_pause_button();
+    if (!btn.disabled && playing) {
+        btn.click();
+    }
+}
+
+// Go to next song.
+function deezer_next() {
+    let btn = document.querySelector(
+        '.player-controls button > svg.svg-icon-next'
+    ).parentElement;
+    if (!btn.disabled) {
+        btn.click();
+    }
+}
+
+// Go to prev song.
+function deezer_previous() {
+    let btn = document.querySelector(
+        '.player-controls button > svg.svg-icon-prev'
+    ).parentElement;
+    if (!btn.disabled) {
+        btn.click();
+    }
+}
+
 function find_input(midi_access, input_name) {
     for (let input of midi_access.inputs.values()) {
         if (input.name === input_name) {
@@ -96,7 +144,36 @@ class Connection {
     }
 
     on_midi_message(event) {
-        console.log(`midi event: ${event.receivedTime}`);
+        if (event.data.length !== 3) {
+            return;
+        }
+
+        let type = event.data[0] & 0xf0;
+        if (type !== 0x90 || event.data[2] === 0) {
+            // Not note-on or zero volocity.
+            return;
+        }
+
+        let key = event.data[1];
+        switch (key) {
+        case 36:
+            console.log("MIDI Controller: Deezer ▶");
+            deezer_play();
+            break;
+        case 38:
+            console.log("MIDI Controller: Deezer ⏸");
+            deezer_pause();
+            break;
+        case 43:
+            console.log("MIDI Controller: Deezer ⏮");
+            deezer_previous();
+            break;
+        case 45:
+            console.log("MIDI Controller: Deezer ⏭");
+            deezer_next();
+            break;
+            
+        }
     }
 
     // Disonnects from the MIDI input port. This function must only be

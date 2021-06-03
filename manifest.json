@@ -29,7 +29,7 @@
     "options_page": "options.html",
     "content_scripts": [
         {
-            "matches": ["*://*.midi.org/*"],
+            "matches": ["*://*.deezer.com/*"],
             "js": ["async_apis.js",
                    "midi_tools.js",
                    "patch_deezer.js"]
