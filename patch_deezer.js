@@ -19,13 +19,15 @@
 console.log(`patching ${window.location} to add Deezer MIDI control`);
 
 function find_input(midi_access, input_name) {
-    for (let input of midi_access.inputs) {
-        if (input.name == input_name) {
+    for (let input of midi_access.inputs.values()) {
+        if (input.name === input_name) {
             return input;
         }
     }
     return null;
 }
+
+let limit = 0;
 
 class Connection {
     constructor(midi_access) {
@@ -36,27 +38,49 @@ class Connection {
                 .catch(err => { console.error(err); });
         }
 
-        this.connected = false;
-        this.connected_port_id = '';
-        this.connected_port_name = '';
+        // Serialize accesses to connected_port.
+        this.mutex = new Mutex();
+        this.connected_port = null;
     }
 
     async on_port_changed(port) {
-        console.log(`port changed: ${port.name} → ${port.state}`);
-        if (port.id === this.connected_port_id) {
-            console.assert(port.state === 'disconnected',
-                           port.state);
-            this.disconnect();
-        } else if (!this.connected) {
-            await this.connect();
-        } else {
-            console.assert(port.id !== this.connected_port_id,
-                           `port.id: ${port.id} port.state: ${port.state}`);
+        console.log(`port changed: ${port.name} → ${port.state} ${port.connection}`);
+        let unlock = await this.mutex.lock();
+        ++limit;
+        if (limit > 10) {
+            throw 'reached the limit';
+        }
+        try {
+            if (this.connected_port &&
+                port.id === this.connected_port.id &&
+                port.state === 'disconnected') {
+                await this.locked_disconnect();
+            } else if (!this.connected_port) {
+                await this.locked_connect();
+            }
+        } finally {
+            unlock();
         }
     }
 
+    // Connects if not already connected (or being connected if
+    // another connection is on-going).
     async connect() {
-        console.assert(!this.connected);
+        let unlock = await this.mutex.lock();
+        try {
+            if (this.connected_port == null) {
+                await this.locked_connect();
+            }
+        } finally {
+            unlock();
+        }
+    }
+
+    // Try to connect to the MIDI input port from settings. This
+    // function must only be called when a lock on this.mutex is held
+    // and when this.connected_port is null.
+    async locked_connect() {
+        console.assert(!this.connected_port);
         
         let values = await get_local_storage('midi_input');
         let input = find_input(this.midi_access, values.midi_input);
@@ -66,16 +90,29 @@ class Connection {
         }
 
         console.log(`Connecting to ${JSON.stringify(input.name)}.`);
-        this.connected = true;
-        this.connected_port_id = input.id;
-        this.connected_port_name = input.name;
+        await input.open();
+        input.onmidimessage = this.on_midi_message;
+        this.connected_port = input;
     }
 
-    disconnect() {
-        console.log(`Disconnecting from ${JSON.stringify(this.connected_port_name)}.`);
-        this.connected = false;
-        this.connected_port_id = '';
-        this.connected_port_name = '';
+    on_midi_message(event) {
+        console.log(`midi event: ${event.receivedTime}`);
+    }
+
+    // Disonnects from the MIDI input port. This function must only be
+    // called when a lock on this.mutex is held and when
+    // this.connected_port is not null.
+    async locked_disconnect() {
+        console.assert(this.connected_port);
+
+        console.log(`Disconnecting from ${JSON.stringify(this.connected_port.name)}.`);
+        try {
+            this.connected_port.onmidimessage = null;
+            await this.connected_port.close();
+        } finally {
+            // We don't want to fail.
+            this.connected_port = null;
+        }
     }
 }
 

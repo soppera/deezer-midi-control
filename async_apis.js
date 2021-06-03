@@ -16,6 +16,37 @@
 // <https://www.gnu.org/licenses/>.
 'use strict';
 
+// Usage:
+//
+// let m = new Mutex();
+// let m_unlock = await m.lock();
+// try {
+//   ...
+// } finally {
+//   m_unlock();
+// }
+class Mutex {
+    constructor() {
+        this.ready = Promise.resolve();
+    }
+    
+    async lock() {
+        let last_ready = this.ready;
+        let unlock;
+        this.ready = new Promise(resolve => (unlock = resolve));
+        // The caller will wait for the last_ready first before
+        // getting the `unlock` function. Next callers of lock() will
+        // wait on the new promise and thus chain.
+        return last_ready.then(() => unlock);
+    }
+}
+
+async function wait(ms) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+}
+
 async function get_local_storage(keys) {
     return new Promise((resolve, reject) => {
         chrome.storage.local.get(
