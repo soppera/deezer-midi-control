@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see
 // <https://www.gnu.org/licenses/>.
+'use strict';
+
 let page = document.getElementById('button_div');
 let selected_class_name = 'current';
 const preset_button_colors = ["#3aa757", "#e8453c", "#f9bb2d", "#4688f1"];

@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see
 // <https://www.gnu.org/licenses/>.
+'use strict';
+
 console.log(`patching ${window.location} to add Deezer MIDI control`);
 
 function find_input(midi_access, input_name) {
