@@ -21,13 +21,13 @@ console.log(`patching ${window.location} to add Deezer MIDI control`);
 // Returns an object with the play/pause <button> as `btn` and a
 // boolean `playing`.
 function deezer_play_pause_button() {
-    const svg = document.querySelector(
-        '.player-controls button > svg.svg-icon-pause , ' +
-            '.player-controls button > svg.svg-icon-play');
+    const btn = document.querySelector(
+        '.player-controls button[aria-label="Pause"], ' +
+            '.player-controls button[aria-label="Play"]');
     return {
-        btn: svg.parentElement,
-        playing: svg.classList.contains('svg-icon-pause')
-    }
+        btn: btn,
+        playing: btn.ariaLabel == "Pause",
+    };
 }
 
 // Starts playing if it was not already playing.
@@ -49,8 +49,8 @@ function deezer_pause() {
 // Go to next song.
 function deezer_next() {
     let btn = document.querySelector(
-        '.player-controls button > svg.svg-icon-next'
-    ).parentElement;
+        '.player-controls button[aria-label="Next"]'
+    );
     if (!btn.disabled) {
         btn.click();
     }
@@ -59,8 +59,8 @@ function deezer_next() {
 // Go to prev song.
 function deezer_previous() {
     let btn = document.querySelector(
-        '.player-controls button > svg.svg-icon-prev'
-    ).parentElement;
+        '.player-controls button[aria-label="Back"]'
+    );
     if (!btn.disabled) {
         btn.click();
     }
