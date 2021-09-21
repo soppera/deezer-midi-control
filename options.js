@@ -16,8 +16,6 @@
 // <https://www.gnu.org/licenses/>.
 'use strict';
 
-let midi_in_combo = document.getElementById('midi_in');
-let midi_in_placeholder = document.getElementById('midi_in_placeholder');
 let midi_event_row_template = document.getElementById('row_template');
 let omni_checkbox = document.getElementById('omni');
 const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -28,22 +26,6 @@ async function setup() {
     
     let midi_access = await midi_access_promise;
     let options = await options_promise;
-
-    // Setup the MIDI input combo.
-    for (let input of midi_access.inputs.values()) {
-        let option = document.createElement('option');
-        option.value = input.name;
-        option.textContent = input.name;
-
-        if (input.name === options.midi_input) {
-            option.selected = true;
-            midi_in_placeholder.selected = false;
-        }
-        
-        midi_in_combo.appendChild(option);
-    }
-
-    midi_in_combo.addEventListener('change', on_midi_in_combo_change);
 
     // Setup the MIDI events.
     await set_local_storage({capturing: false});
@@ -84,6 +66,7 @@ function setup_midi_event(label, name, options, capture_manager) {
 }
 
 function set_midi_event_data(row, option) {
+    row.querySelector('.midi_in').textContent = option.midi_in;
     let event = row.querySelector('.event');
     let number = row.querySelector('.number');
     switch (option.type) {
@@ -99,11 +82,6 @@ function set_midi_event_data(row, option) {
         console.error(`unsupported option: %{option}`);
     }
     row.querySelector('.channel').textContent = option.channel;
-}
-
-function on_midi_in_combo_change() {
-    console.log(`midi_input ← ${midi_in_combo.value}`);
-    set_local_storage({midi_input: midi_in_combo.value});
 }
 
 function on_omni_checkbox_change() {
@@ -125,12 +103,15 @@ class CaptureManager {
         }
 
         this.capturing.button.classList.remove('capturing');
+        this.capturing.row.querySelector('.midi_in').textContent = this.capturing.last_midi_in;
         this.capturing.row.querySelector('.event').textContent = this.capturing.last_event;
         this.capturing.row.querySelector('.number').textContent = this.capturing.last_number;
         this.capturing.row.querySelector('.channel').textContent = this.capturing.last_channel;
 
-        this.capturing.input_port.onmidimessage = null;
-        this.capturing.input_port.close();
+        for (const input_port of this.capturing.input_ports) {
+            input_port.onmidimessage = null;
+            input_port.close();
+        }
 
         this.capturing = null;
     }
@@ -156,18 +137,19 @@ class CaptureManager {
             this.set_options({capturing: true}).catch(console.error); 
         }
 
-        let input_port = find_input(this.midi_access, midi_in_combo.value);
-        if (input_port == null) {
-            console.error(`can't connect to input port ${JSON.stringify(midi_in_combo.value)}`);
-            return;
+        const input_ports = Array.from(this.midi_access.inputs.values());
+        for (const input_port of input_ports) {
+            input_port.onmidimessage = (event) => {
+                this.on_midi_message(input_port, event);
+            };
         }
 
-        input_port.onmidimessage = (event) => { this.on_midi_message(event) };
-
-        this.capturing = {name, button, row, input_port};
+        this.capturing = {name, button, row, input_ports};
 
         button.classList.add('capturing');
 
+        this.capturing.last_midi_in = row.querySelector('.midi_in').textContent;
+        row.querySelector('.midi_in').textContent = '?';
         this.capturing.last_event = row.querySelector('.event').textContent;
         row.querySelector('.event').textContent = '?';
         this.capturing.last_number = row.querySelector('.number').textContent;
@@ -176,22 +158,25 @@ class CaptureManager {
         row.querySelector('.channel').textContent = '?';
     }
 
-    on_midi_message(event) {
+    on_midi_message(input_port, event) {
         console.assert(this.capturing);
         if (event.data.length !== 3) {
             return;
         }
+        let midi_in = input_port.name;
         let type = event.data[0] & 0xf0;
         let channel = event.data[0] & 0xf;
         let option = null;
         if (type === 0x90 && event.data[2] > 0) {
             option = {
+                midi_in,
                 type: 'note',
                 key: event.data[1],
                 channel
             };
         } else if (type === 0xb0) {
             option = {
+                midi_in,
                 type: 'cc',
                 cc: event.data[1],
                 channel

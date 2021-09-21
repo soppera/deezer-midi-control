@@ -23,16 +23,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   </head>
   <body>
     <div class="options">
-      <div class="row">
-        <label>MIDI device</label>
-        <select id="midi_in">
-          <option id="midi_in_placeholder" value="" selected disabled hidden>select a MIDI device</option>
-        </select>
-      </div>
       <template id="row_template">
         <div class="row">
           <label>Play</label>
-          <div class="midi_binding"><div class="event">—</div><div class="number">—</div><div class="channel">—</div></div>
+          <div class="midi_binding"><div class="midi_in">—</div><div class="event">—</div><div class="number">—</div><div class="channel">—</div></div>
           <button type="button" class="capture"></button>
         </div>
       </template>
