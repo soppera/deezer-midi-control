@@ -23,9 +23,18 @@ function log_all_midi_inputs(midi_access) {
     }    
 }
 
-function find_input(midi_access, input_name) {
+function find_input_from_id(midi_access, id) {
     for (let input of midi_access.inputs.values()) {
-        if (input.name === input_name) {
+        if (input.id === id) {
+            return input;
+        }
+    }
+    return null;
+}
+
+function find_input_from_name(midi_access, name) {
+    for (let input of midi_access.inputs.values()) {
+        if (input.name === name) {
             return input;
         }
     }

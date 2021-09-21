@@ -20,7 +20,6 @@ let color = '#3aa757';
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({
-        midi_input: '',
         play_event: null,
         pause_event: null,
         next_event: null,

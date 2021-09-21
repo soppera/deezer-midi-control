@@ -86,11 +86,9 @@ function is_event_matching(event, matcher, omni) {
 class Session {
     // Don't call this directly. Use the new_session() function.
     constructor(midi_access) {
-        // Serialize accesses to connected_port and options.
+        // Serialize accesses to connected_ports and options.
         this.mutex = new Mutex();
         this.options = {
-            // Name of the MIDI input to listen to.
-            midi_input: '',
             play_event: null,
             pause_event: null,
             next_event: null,
@@ -99,7 +97,21 @@ class Session {
             capturing: false
         }
         this.midi_access = midi_access;
-        this.connected_port = null;
+        this.connected_ports = new Map();
+    }
+
+    // Returns the Set of port names in the current options.
+    midi_in_set() {
+        let ret = new Set();
+        for (const event of [this.options.play_event,
+                             this.options.pause_event,
+                             this.options.next_event,
+                             this.options.previous_event]) {
+            if (event !== null) {
+                ret.add(event.midi_in);
+            }
+        }
+        return ret
     }
 
     async on_port_changed(port) {
@@ -110,39 +122,46 @@ class Session {
             throw 'reached the limit';
         }
         try {
-            if (this.connected_port &&
-                port.id === this.connected_port.id &&
-                port.state === 'disconnected') {
-                await this.locked_disconnect();
-            } else if (!this.connected_port) {
-                await this.locked_connect();
+            if (port.state === 'disconnected') {
+                if (this.connected_ports.get(port.name) === port.id) {
+                    await this.locked_disconnect(port);
+                }
+            } else {
+                if (this.midi_in_set().has(port.name) &&
+                    !this.connected_ports.has(port.name)) {
+                    await this.locked_connect(port);
+                }
             }
         } finally {
             unlock();
         }
     }
 
-    // Try to connect to the MIDI input port from settings. This
-    // function must only be called when a lock on this.mutex is held
-    // and when this.connected_port is null.
-    async locked_connect() {
-        console.assert(!this.connected_port);
-        
-        let input = find_input(this.midi_access, this.options.midi_input);
-        if (!input) {
-            console.warn(`Can't find the MIDI input named ${JSON.stringify(this.options.midi_input)}.`);
+    // Try to connect to a MIDI port by name.
+    async locked_try_connect(port_name) {
+        const port = find_input_from_name(this.midi_access, port_name);
+        if (port === null) {
+            console.warn(`Can't connect to ${JSON.stringify(port_name)} since it does not exist (yet?).`);
             return;
         }
-
-        console.log(`Connecting to ${JSON.stringify(input.name)}.`);
-
-        await input.open();
-
-        input.onmidimessage = event => { this.on_midi_message(event) };
-        this.connected_port = input;
+        await this.locked_connect(port);
     }
 
-    on_midi_message(event) {
+    // Connect to the MIDI input. This function must only be called
+    // when a lock on this.mutex is held and when
+    // !this.connected_ports.has(port.name).
+    async locked_connect(port) {
+        console.assert(!this.connected_ports.has(port.name));
+        
+        console.log(`Connecting to ${JSON.stringify(port.name)}.`);
+
+        await port.open();
+
+        port.onmidimessage = event => { this.on_midi_message(port, event) };
+        this.connected_ports.set(port.name, port.id);
+    }
+
+    on_midi_message(port, event) {
         if (this.options.capturing) {
             return;
         }
@@ -151,17 +170,20 @@ class Session {
             return;
         }
 
+        let midi_in = port.name;
         let type = event.data[0] & 0xf0;
         let matcher = null;
         let channel = event.data[0] & 0xf;
         if (type === 0x90 && event.data[2] > 0) {
             matcher = {
+                midi_in,
                 type: 'note',
                 key: event.data[1],
                 channel
             }
         } else if (type === 0xb0 && event.data[2] >= 0x40) {
             matcher = {
+                midi_in,
                 type: 'cc',
                 cc: event.data[1],
                 channel
@@ -188,17 +210,17 @@ class Session {
 
     // Disonnects from the MIDI input port. This function must only be
     // called when a lock on this.mutex is held and when
-    // this.connected_port is not null.
-    async locked_disconnect() {
-        console.assert(this.connected_port);
+    // this.connected_ports.get(port.name) === port.id.
+    async locked_disconnect(port) {
+        console.assert(this.connected_ports.get(port.name) === port.id);
 
-        console.log(`Disconnecting from ${JSON.stringify(this.connected_port.name)}.`);
+        console.log(`Disconnecting from ${JSON.stringify(port.name)}.`);
         try {
-            this.connected_port.onmidimessage = null;
-            await this.connected_port.close();
+            port.onmidimessage = null;
+            await port.close();
         } finally {
             // We don't want to fail.
-            this.connected_port = null;
+            this.connected_ports.delete(port.name);
         }
     }
 }
@@ -226,9 +248,30 @@ async function new_session(midi_access) {
             (async () => {
                 let unlock = await session.mutex.lock();
                 try {
+                    const previous_midi_in_set = session.midi_in_set();
                     for (let [key, {oldValue, newValue}] of Object.entries(changes)) {
                         console.log(`session.options[${key}] ← ${JSON.stringify(newValue)}`);
                         session.options[key] = newValue;
+                    }
+                    const new_midi_in_set = session.midi_in_set();
+                    for (const midi_in of previous_midi_in_set) {
+                        if (!new_midi_in_set.has(midi_in) &&
+                            session.connected_ports.has(midi_in)) {
+                            console.log(`midi port ${JSON.stringify(midi_in)} not used anymore; disconnecting`)
+                            const port_id = session.connected_ports.get(midi_in);
+                            const port = find_input_from_id(midi_access, port_id);
+                            if (port === null) {
+                                console.warn(`can't find the input port named ${JSON.stringify(midi_in)} which id was ${JSON.stringify(port_id)}`);
+                            } else {
+                                await session.locked_disconnect(port);
+                            }
+                        }
+                    }
+                    for (const midi_in of new_midi_in_set) {
+                        if (!previous_midi_in_set.has(midi_in)) {
+                            console.log(`new midi port ${JSON.stringify(midi_in)}; trying to connect`);
+                            await session.locked_try_connect(midi_in);
+                        }
                     }
                     if (changes.midi_input) {
                         console.log(`session.options.midi_input changed!`);
@@ -244,7 +287,9 @@ async function new_session(midi_access) {
         });
 
         // Try to connect with current options.
-        await session.locked_connect();
+        for (const midi_in of session.midi_in_set()) {
+            await session.locked_try_connect(midi_in);
+        }
 
         return session;
     } finally {
@@ -265,14 +310,11 @@ navigator.requestMIDIAccess()
         chrome.runtime.onMessage.addListener((request, sender, send_response) => {
             if (request.method === 'session_status') {
                 // We don't lock here since; the operations are atomic.
-                if (session.connected_port) {
-                    send_response({
-                        connected: true,
-                        midi_input: session.connected_port.name
-                    });
-                } else {
-                    send_response({connected: false});
+                let midi_ins = [];
+                for (const midi_in of session.connected_ports.keys()) {
+                    midi_ins.push(midi_in);
                 }
+                send_response({midi_ins});
             }
         });
     })

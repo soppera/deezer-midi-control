@@ -30,9 +30,12 @@ async function setup() {
         document.body.appendChild(document.createTextNode('not the Deezer tab'));
     }
     if (status) {
-        if (status.connected) {
-            document.body.appendChild(document.createTextNode(
-                `connected to MIDI: ${status.midi_input}`));
+        if (status.midi_ins.length > 0) {
+            for (const midi_in of status.midi_ins) {
+                document.body.appendChild(document.createTextNode(
+                    `connected to: ${midi_in}`));
+                document.body.appendChild(document.createElement('br'));
+            }
         } else {
             document.body.appendChild(document.createTextNode('not connected MIDI'));
         }
