@@ -1,0 +1,42 @@
+<!--
+Chrome extension to control Deezer with a MIDI device.
+Copyright (C) 2021  Stéphane SOPPERA
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="options">
+      <template id="row_template">
+        <div class="row">
+          <label>Play</label>
+          <div class="midi_binding"><div class="midi_in">—</div><div class="event">—</div><div class="number">—</div><div class="channel">—</div></div>
+          <button type="button" class="capture"></button>
+        </div>
+      </template>
+      <div class="row">
+        <label>Omni mode</label>
+        <input type="checkbox" id="omni">
+      </div>
+    </div>
+    <script src="async_apis.js"></script>
+    <script src="midi_tools.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

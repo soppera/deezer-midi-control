@@ -1,0 +1,79 @@
+/*
+Chrome extension to control Deezer with a MIDI device.
+Copyright (C) 2021  Stéphane SOPPERA
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+body.popup {
+    width: 250px;
+}
+
+label {
+    display: inline-block;
+    width: 120px;
+}
+
+button.capture {
+    width: 70px;
+}
+
+button.capture:after {
+    content: 'capture'
+}
+
+button.capture.capturing {
+    background-color: #ff9f9f;
+}
+
+button.capture.capturing:after {
+    content: 'cancel'
+}
+
+.midi_binding,
+.midi_binding .midi_in,
+.midi_binding .event,
+.midi_binding .number,
+.midi_binding .channel {
+    display: inline-block;
+}
+
+.midi_binding .midi_in,
+.midi_binding .event,
+.midi_binding .number,
+.midi_binding .channel {
+    padding: 0 20px;
+    text-align: center;
+}
+
+.midi_binding .midi_in {
+    width: 294px;
+}
+
+.midi_binding .event {
+    width: 50px;
+}
+
+.midi_binding .channel,
+.midi_binding .number {
+    width: 25px;
+}
+
+.midi_binding {
+    background-color: #f3f3f3;
+}
+
+.options .row {
+    margin: 4px 0;
+}
