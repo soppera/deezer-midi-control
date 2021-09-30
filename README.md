@@ -11,9 +11,13 @@ A Chrome extension to control Deezer with a MIDI device.
 
 The extension should show up in Chrome.
 
-### Reading Point ###
+### Packaging ###
 
-https://developer.chrome.com/docs/extensions/mv3/overview/
+To create the Zip file to send to the Chrome webstore:
+* Make sure that the `manifest.json` version is updated.
+* Make sure a Git tag exists with the same version.
+* Run `make package` that will create the package in the root
+  directory, suffixed by the version number.
 
 ### License ###
 
