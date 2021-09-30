@@ -2,7 +2,7 @@
 
 A Chrome extension to control Deezer with a MIDI device.
 
-### Installation ###
+### Developer Mode Installation ###
 
 * Open chrome://extensions
 * Enable _developer mode_ by clicking on the toggle switch.
