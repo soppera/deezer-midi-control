@@ -11,7 +11,7 @@ _IGNORED_RELATIVE_PATHS = set(('images/icon.svg',
 _IGNORED_SUFFIXES = ('.zip', '~')
 _MANIFEST_NAME = 'manifest.json'
 
-def is_suffix_ignored(file_name: str):
+def is_suffix_ignored(file_name: str) -> bool:
     for ignored in _IGNORED_SUFFIXES:
         if file_name.endswith(ignored):
             return True
