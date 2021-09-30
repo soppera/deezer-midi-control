@@ -47,7 +47,7 @@ def main():
     parser.add_argument('root_directory', metavar='ROOT_DIRECTORY',
                         help='root directory of the extension sources')
     parser.add_argument('-o', '--output', default='package-{version}.zip',
-                        help='the file to write to')
+                        help='the file to write to; the tag {version} is replaced with the package version')
     parser.add_argument('--no-check-version', dest='check_version',
                         action='store_false',
                         help='disable the check of the package\'s version')
