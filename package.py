@@ -12,12 +12,16 @@ _IGNORED_SUFFIXES = ('.zip', '~')
 _MANIFEST_NAME = 'manifest.json'
 
 def is_suffix_ignored(file_name: str) -> bool:
+    """Returns true if the input file ends with one of _IGNORED_SUFFIXES."""
     for ignored in _IGNORED_SUFFIXES:
         if file_name.endswith(ignored):
             return True
     return False
 
 def files_relative_paths(root: str) -> Sequence[str]:
+    """Returns the relative paths of all files to package.
+
+    This takes into account all _IGNORED_XXX collections."""
     ret = []
     for dir_path, dir_names, file_names in os.walk(root):
         dir_path_rel = os.path.relpath(dir_path, start=root)
@@ -38,6 +42,7 @@ def files_relative_paths(root: str) -> Sequence[str]:
     return ret
 
 def parse_version(manifest_path) -> str:
+    """Returns the version number stored in the JSON manifest."""
     with open(manifest_path, 'rb') as f:
         manifest = json.load(f)
     return manifest['version']
