@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from typing import Sequence
-import argparse, zipfile, os, json
+from typing import Sequence, Optional
+import argparse, zipfile, os, json, subprocess, sys, itertools
 
 _IGNORED_DIRS = set(('.git', '.mypy_cache'))
 _IGNORED_FILES = set(('.gitignore',))
@@ -17,6 +17,23 @@ def is_suffix_ignored(file_name: str) -> bool:
         if file_name.endswith(ignored):
             return True
     return False
+
+def is_git_clean(root: str) -> Optional[str]:
+    p = subprocess.run(('git', 'status', '--porcelain=2', '--branch'),
+                       check=True,
+                       stdout=subprocess.PIPE)
+    lines = p.stdout.split(b'\n')
+    header_lines, content_lines = tuple(tuple(i) for (_, i) in itertools.groupby(lines, key=lambda line: line.startswith(b'#')))
+    (ab_header,) = (l for l in header_lines if l.startswith(b'# branch.ab '))
+    (_, _, ahead, behind) = ab_header.split(b' ')
+
+    if ahead != b'+0':
+        return 'there are some unpushed changes in the repository'
+
+    if content_lines:
+        return 'there are some local changes in the repository'
+        
+    return None
 
 def files_relative_paths(root: str) -> Sequence[str]:
     """Returns the relative paths of all files to package.
@@ -53,12 +70,19 @@ def main():
                         help='root directory of the extension sources')
     parser.add_argument('-o', '--output', default='package-{version}.zip',
                         help='the file to write to; the tag {version} is replaced with the package version')
-    parser.add_argument('--no-check-version', dest='check_version',
+    parser.add_argument('--no-check-git', dest='check_git',
                         action='store_false',
-                        help='disable the check of the package\'s version')
+                        help='disable the check of the git status')
     args = parser.parse_args()
 
     version = parse_version(os.path.join(args.root_directory, _MANIFEST_NAME))
+
+    if args.check_git:
+        opt_err = is_git_clean(args.root_directory)
+        if opt_err is not None:
+            print(f'ERROR: {opt_err}', file=sys.stderr)
+            sys.exit(1)
+    
     zip_file_path = args.output.format(version=version)
     print(f'writing to {zip_file_path}')
     with zipfile.ZipFile(zip_file_path, 'w') as zf:
