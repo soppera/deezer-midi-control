@@ -1,7 +1,7 @@
 {
     "name": "Deezer Midi Control",
     "description": "Control Deezer player via a MIDI input device.",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "manifest_version": 3,
     "background": {
         "service_worker": "background.js"

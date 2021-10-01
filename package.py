@@ -8,7 +8,7 @@ _IGNORED_FILES = set(('.gitignore',))
 _IGNORED_RELATIVE_PATHS = set(('images/icon.svg',
                                './Makefile',
                                './README.md'))
-_IGNORED_SUFFIXES = ('.zip', '~')
+_IGNORED_SUFFIXES = ('.zip', '~', '.py')
 _MANIFEST_NAME = 'manifest.json'
 
 def is_suffix_ignored(file_name: str) -> bool:
