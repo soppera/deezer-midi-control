@@ -24,14 +24,15 @@ def is_git_clean(root: str) -> Optional[str]:
                        stdout=subprocess.PIPE)
     lines = p.stdout.split(b'\n')
     header_lines, content_lines = tuple(tuple(i) for (_, i) in itertools.groupby(lines, key=lambda line: line.startswith(b'#')))
+    content_lines = tuple(l for l in content_lines if l)
     (ab_header,) = (l for l in header_lines if l.startswith(b'# branch.ab '))
     (_, _, ahead, behind) = ab_header.split(b' ')
 
+    if content_lines:
+        return f'there are some local changes in the repository:\n{content_lines!r}'
+
     if ahead != b'+0':
         return 'there are some unpushed changes in the repository'
-
-    if content_lines:
-        return 'there are some local changes in the repository'
         
     return None
 
