@@ -33,6 +33,8 @@ def is_git_clean(root: str) -> Optional[str]:
 
     if ahead != b'+0':
         return 'there are some unpushed changes in the repository'
+
+    # TODO: check the tag
         
     return None
 
