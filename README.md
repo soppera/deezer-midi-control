@@ -2,6 +2,11 @@
 
 A Chrome extension to control Deezer with a MIDI device.
 
+### Installation ###
+
+The extension is available in the _Chrome Web Store_
+[here](https://chrome.google.com/webstore/detail/deezer-midi-control/bdoabkkcjiondgihhjmoogdfebcmdgfi).
+
 ### Developer Mode Installation ###
 
 * Open chrome://extensions
