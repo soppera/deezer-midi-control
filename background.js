@@ -18,20 +18,31 @@
 
 let color = '#3aa757';
 
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.set({
-        play_event: null,
-        pause_event: null,
-        next_event: null,
-        previous_event: null,
-        omni: true,
-        capturing: false,
-    }, () => {
-        if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError.message);
-        } else {
-            console.log('Default settings installed');
-        }
-    });
+chrome.runtime.onInstalled.addListener((details) => {
+    switch (details.reason) {
+    default:
+        console.error(`Unknown reason: %{JSON.stringify(details.reason)}; pretending this is "update"`);
+        // Intentional fall-through.
+    case 'install':
+    case 'update':
+        chrome.storage.local.set({
+            play_event: null,
+            pause_event: null,
+            next_event: null,
+            previous_event: null,
+            omni: true,
+            capturing: false,
+        }, () => {
+            if (chrome.runtime.lastError) {
+                console.error(chrome.runtime.lastError.message);
+            } else {
+                console.log('Default settings installed');
+            }
+        });
+        break;
+    case 'chrome_update':
+    case 'shared_module_update':
+        break;
+    }
 });
 
