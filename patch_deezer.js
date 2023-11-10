@@ -22,8 +22,8 @@ console.log(`patching ${window.location} to add Deezer MIDI control`);
 // boolean `playing`.
 function deezer_play_pause_button() {
     const btn = document.querySelector(
-        '.player-controls button[aria-label="Pause"], ' +
-            '.player-controls button[aria-label="Play"]');
+        'button[aria-label="Pause"][data-testid="play_button_pause"], ' +
+            'button[aria-label="Play"][data-testid="play_button_play"]');
     return {
         btn: btn,
         playing: btn.ariaLabel == "Pause",
@@ -49,7 +49,7 @@ function deezer_pause() {
 // Go to next song.
 function deezer_next() {
     let btn = document.querySelector(
-        '.player-controls button[aria-label="Next"]'
+        'button[aria-label="Next"][data-testid="next_track_button"]'
     );
     if (!btn.disabled) {
         btn.click();
@@ -59,7 +59,7 @@ function deezer_next() {
 // Go to prev song.
 function deezer_previous() {
     let btn = document.querySelector(
-        '.player-controls button[aria-label="Back"]'
+        'button[aria-label="Back"][data-testid="previous_track_button"]'
     );
     if (!btn.disabled) {
         btn.click();
