@@ -1,0 +1,88 @@
+* Problèmes avec la version actuelle
+
+** Manifest
+
+Le ~manifest.json~ doit être mis à jour pour Firefox:
+- ~"service_worker"~ → ~"scripts"~
+- ~"options_page"~ → ~"options_ui"~
+
+#+begin_src diff
+  modified   manifest.json
+  @@ -4,7 +4,8 @@
+       "version": "0.2.6",
+       "manifest_version": 3,
+       "background": {
+  -        "service_worker": "background.js"
+  +        "service_worker": "background.js",
+  +        "scripts": ["background.js"]
+       },
+       "permissions": [
+           "storage"
+  @@ -24,7 +25,10 @@
+           "48": "/images/icon-48.png",
+           "128": "/images/icon-128.png"
+       },
+  -    "options_page": "options.html",
+  +    "options_ui": {
+  +        "open_in_tab": true,
+  +        "page": "options.html"
+  +    },
+       "content_scripts": [
+           {
+               "matches": ["*://*.deezer.com/*"],
+#+end_src
+
+** Bac à sable
+
+Firefox utilise un bac à sable qui empêche l'accès au ~midi-access~
+par le script injecté (il y a accès mais ne peut pas itérer sur les
+~inputs~ par exemple).
+
+On peut le contourner en remplaçant ~midi_access.inputs.keys()~ par
+~midi_access.wrappedJSObject.inputs.keys()~ mais ça fragilise la
+sécurité car les extensions s'exécutent dans une environment plus
+privilégié.
+
+#+begin_src diff
+  @@ -18,13 +18,13 @@
+
+   function log_all_midi_inputs(midi_access) {
+       console.log('inputs:');
+  -    for (let k of midi_access.inputs.keys()) {
+  +    for (let k of midi_access.wrappedJSObject.inputs.keys()) {
+           console.log(`  ${k}: ${midi_access.inputs.get(k).name}`);
+       }    
+   }
+#+end_src
+
+** Options
+
+La page d'option ne peut pas avoir accès à WebMidi car seules les
+pages ~https://...~ y ont accès.
+
+* Solution
+
+Une solution possible est d'injecter du code JS directement dans la
+page:
+
+#+begin_src js
+  let patch_deezer_script = document.createElement('script');
+  patch_deezer_script.textContent =
+    "navigator.requestMIDIAccess()\n" +
+    "    .then(async midi_access => {\n" +
+    "        console.log(`§§ got midi: ${midi_access}`);\n" +
+    "        console.log('§§ inputs:');\n" +
+    "        for (let k of midi_access.inputs.keys()) {\n" +
+    "            console.log(`  ${k}: ${midi_access.inputs.get(k).name}`);\n" +
+    "        }\n" +
+    "    })\n" +
+    "    .catch(err => { console.error(err); });\n";
+  document.head.appendChild(patch_deezer_script);
+#+end_src
+
+Ça impose quand même que:
+- les settings sont maintenant stockés dans le ~localStorage~ de la page,
+- et les options doivent être accessibles dans la page elle même, en
+  particulier la capture;\
+  il faut sans doute ici afficher par dessus la page une UI temporaire.
+
